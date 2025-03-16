@@ -31,7 +31,7 @@ Group
     grpFieldFunctionObjects
 
 Description
-    Computes turbulence kinematic energy budget term.
+    Computes turbulence kinetic energy budget term in incompressible flows.
 
     Operands:
     \table
@@ -57,12 +57,14 @@ Usage
         writeInterval   1;
         timeStart       1;
         timeEnd         1;
+        rho             1000;
 
         convectionTerm                              on;
         productionTerm                              on;
         turbulenceDiffusionTerm                     on;
-        viscousityDiffusionTerm                     on;
+        viscousDiffusionTerm                        on;
         velocity-pressureGradient-CorelationTerm    on;
+        viscousDissipation                          on;
     }
     \endverbatim
 
@@ -71,6 +73,7 @@ Usage
       Property     | Description                        | Type | Req'd | Dflt
       type         | Type name: tkeBudget               | word |  yes  | -
       libs         | Library name: tkeBudget            | word |  yes  | -
+      rho          | Fluid Density                      | scalar| yes  | -
       fields       | Names of the operand fields and averaging options <!--
                --> | dict |  yes  | -
       restartOnRestart| Restart the averaging on restart | bool | no     | false
@@ -83,7 +86,7 @@ Usage
 
     The inherited entries are elaborated in:
      - \link functionObject.H \endlink
-     - \link fieldAverageItem.H \endlink
+     - \link tkeBudget.H \endlink
 
     Usage by the \c postProcess utility is not available.
 
@@ -122,6 +125,9 @@ class tkeBudget
 protected:
 
     // Protected Data
+
+        //- Fluid Density
+        scalar rho_;
 
         //- Calculate the tkeBuget convention term
         Switch convectionTerm_;

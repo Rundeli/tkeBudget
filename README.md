@@ -3,7 +3,7 @@ OpenFOAM's functionObject used to calculate turbulence kinetic energy budget of 
 
 Turbulence kinetic energy equation given as:
 
-$ [\frac{\partial}{\partial t}+U_j\frac{\partial}{\partial x_j}]k = \frac{\partial}{\partial x_j}\{-\frac{1}{\rho}\langle pu_i\rangle\delta_{ij}-\frac{1}{2}\langle q^2u_j\rangle+2\nu\langle s_{ij}u_i\rangle\}-\langle u_iu_j\rangle \frac{\partial U_i}{x_j}-2\nu\langle s_{ij}s_{ij}\rangle $
+$[\frac{\partial}{\partial t}+U_j\frac{\partial}{\partial x_j}]k = \frac{\partial}{\partial x_j}\{-\frac{1}{\rho}\langle pu_i\rangle\delta_{ij}-\frac{1}{2}\langle q^2u_j\rangle+2\nu\langle s_{ij}u_i\rangle\}-\langle u_iu_j\rangle \frac{\partial U_i}{x_j}-2\nu\langle s_{ij}s_{ij}\rangle$
 
 where:
 $U$ denotes mean velovity; 

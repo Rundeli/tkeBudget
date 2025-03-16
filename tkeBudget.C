@@ -275,7 +275,7 @@ void Foam::functionObjects::tkeBudget::calVPGCorelationTerm
                     UPrime.mesh().time().timeName(),
                     UPrime.mesh()
                 ),
-                UPrime & gradPPrime_
+                -(1.0/rho_)*UPrime & gradPPrime_
             )
         );
 
@@ -379,6 +379,7 @@ Foam::functionObjects::tkeBudget::tkeBudget
 )
 :
     fvMeshFunctionObject(name, runTime, dict),
+    rho_(dict.get<scalar>("rho")),
     convectionTerm_(dict.get<Switch>("convectionTerm")),
     productionTerm_(dict.get<Switch>("productionTerm")),
     turDiffusionTerm_(dict.get<Switch>("turbulenceDiffusionTerm")),
