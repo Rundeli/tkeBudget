@@ -138,6 +138,9 @@ protected:
         //- Calculate the tkeBuget velocity-pressure_gradient correlation term
         Switch vpgCorelationTerm_;
 
+        //- Calculate the tkeBuget viscousity dissipation term
+        Switch visDissipationTerm_;
+
         //- Name of velocity field
         word UName_;
 
@@ -214,10 +217,11 @@ protected:
         //- Calculate the tkeBuget TurbulenceDiffusionTerm Fields
         void calTurbulenceDiffusionTerm
         (
+            const volSymmTensorField& UPrime2Mean,
             const volVectorField& UPrime
         );
 
-        //- Calculate the tkeBuget ViscousityDiffusionTerm Fields
+        //- Calculate the tkeBuget ViscousDiffusionTerm Fields
         void calViscousDiffusionTerm
         (
             const volSymmTensorField& Sij,
@@ -231,6 +235,13 @@ protected:
             const volVectorField& UPrime,
             const volScalarField& p,
             const volScalarField& pMean
+        );
+
+        //- Calculate the tkeBuget ViscousDissipationTerm Fields
+        void calViscousDissipationTerm
+        (
+            const volSymmTensorField& Sij,
+            const volScalarField& nu
         );
 
         //- Insert the defined field name-switch Mapping

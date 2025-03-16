@@ -34,7 +34,7 @@ void Foam::functionObjects::tkeBudget::calculateTKEBudget()
     tmp<volTensorField> gradUPrimePtr_ = fvc::grad(UPrime);
     volTensorField& gradUPrime_ = gradUPrimePtr_.ref();
 
-    volSymmTensorField Sij = 0.5*symm(gradUPrime_);
+    volSymmTensorField Sij = symm(gradUPrime_);
 
     tmp<volTensorField> gradUMeanPtr_ = fvc::grad(UMean_);
     volTensorField& gradUMean_ = gradUMeanPtr_.ref();
@@ -45,9 +45,10 @@ void Foam::functionObjects::tkeBudget::calculateTKEBudget()
 
     calConvectionTerm(UMean_,gradUPrime2Mean_);
     calProductionTerm(UPrime2Mean_,gradUMean_);
-    calTurbulenceDiffusionTerm(UPrime,nu_);
+    calTurbulenceDiffusionTerm(UPrime2Mean_,UPrime);
     calViscousDiffusionTerm(Sij,UPrime,nu_);
     calVPGCorelationTerm(UPrime,p_,pMean_);
+    calViscousDissipationTerm(Sij,nu_);
 }
 
 void Foam::functionObjects::tkeBudget::calConvectionTerm
@@ -148,15 +149,16 @@ void Foam::functionObjects::tkeBudget::calProductionTerm
 
 void Foam::functionObjects::tkeBudget::calTurbulenceDiffusionTerm
 (
+    const volSymmTensorField& UPrime2Mean,
     const volVectorField& UPrime
 )
 {
     if(turDiffusionTerm_)
     {
         Info<< "Calculating TKE turbulence diffusion term" << endl;
-        volScalarField innerUPM = UPrime & UPrime;
-        volVectorField outerUPM = innerUPM * UPrime;
-        volScalarField divUPM = fvc::div(outerUPM);
+        volScalarField trUP2M = tr(UPrime2Mean);
+        volVectorField q2UPrime = trUP2M * UPrime;
+        volScalarField divq2UPM = fvc::div(q2UPrime);
 
         tmp<volScalarField> tdfPtr_
         (
@@ -168,7 +170,7 @@ void Foam::functionObjects::tkeBudget::calTurbulenceDiffusionTerm
                     UPrime.mesh().time().timeName(),
                     UPrime.mesh()
                 ),
-                2.0*divUPM
+                divq2UPM
             )
         );
 
@@ -207,8 +209,8 @@ void Foam::functionObjects::tkeBudget::calViscousDiffusionTerm
     if(visDiffusionTerm_)
     {
         Info<< "Calculating TKE viscous diffusion term" << endl;
-        volVectorField SijU = Sij & UPrime;
-        volScalarField divSijU = fvc::div(SijU);
+        volTensorField gradUP = fvc::grad(UPrime);
+        volScalarField SgradUP = Sij && gradUP;
         tmp<volScalarField> vdfPtr_
         (
             new volScalarField
@@ -219,7 +221,7 @@ void Foam::functionObjects::tkeBudget::calViscousDiffusionTerm
                     UPrime.mesh().time().timeName(),
                     UPrime.mesh()
                 ),
-                2.0*nu*divSijU
+                2.0*nu*SgradUP
             )
         );
 
@@ -302,6 +304,55 @@ void Foam::functionObjects::tkeBudget::calVPGCorelationTerm
     }
 }
 
+void Foam::functionObjects::tkeBudget::calViscousDissipationTerm
+(
+    const volSymmTensorField& Sij,
+    const volScalarField& nu
+)
+{
+    if(visDissipationTerm_)
+    {
+        Info<< "Calculating TKE viscous dissipation term" << endl;
+        volScalarField Sij2 = Sij && Sij;
+        tmp<volScalarField> vdpPtr_
+        (
+            new volScalarField
+            (
+                IOobject
+                (
+                    "viscousDissipationTerm",
+                    Sij.mesh().time().timeName(),
+                    Sij.mesh()
+                ),
+                2.0*nu*Sij2
+            )
+        );
+
+        if(obr().foundObject<volScalarField>("tkeBudget_viscousDissipationTerm"))
+        {
+            const_cast<volScalarField&>(obr().lookupObject<volScalarField>("tkeBudget_viscousDissipationTerm")) = vdpPtr_;
+        }
+        else
+        {
+            obr_.store
+            (
+                new volScalarField
+                (
+                    IOobject
+                    (
+                        "tkeBudget_viscousDissipationTerm",
+                        obr_.time().timeName(),
+                        obr_,
+                        IOobject::NO_READ,
+                        IOobject::NO_WRITE
+                    ),
+                    vdpPtr_
+                )
+            );
+        }
+    }
+}
+
 void Foam::functionObjects::tkeBudget::checkInsert
 (
     const word &fieldName, 
@@ -331,8 +382,9 @@ Foam::functionObjects::tkeBudget::tkeBudget
     convectionTerm_(dict.get<Switch>("convectionTerm")),
     productionTerm_(dict.get<Switch>("productionTerm")),
     turDiffusionTerm_(dict.get<Switch>("turbulenceDiffusionTerm")),
-    visDiffusionTerm_(dict.get<Switch>("viscousityDiffusionTerm")),
+    visDiffusionTerm_(dict.get<Switch>("viscousDiffusionTerm")),
     vpgCorelationTerm_(dict.get<Switch>("velocity-pressureGradient-CorelationTerm")),
+    visDissipationTerm_(dict.get<Switch>("viscousDissipationTerm")),
     UName_(dict.getOrDefault<Foam::word>("U", "U")),
     UMeanName_(dict.getOrDefault<Foam::word>("UMean", "UMean")),
     UPrime2MeanName_(dict.getOrDefault<Foam::word>("UPrime2Mean", "UPrime2Mean")),
@@ -344,7 +396,8 @@ Foam::functionObjects::tkeBudget::tkeBudget
     checkInsert("tkeBudget_productionTerm",productionTerm_,FieldsList);
     checkInsert("tkeBudget_turbulenceDiffusionTerm",turDiffusionTerm_,FieldsList);
     checkInsert("tkeBudget_viscousDiffusionTerm",visDiffusionTerm_,FieldsList);
-    checkInsert("tkeBudget_VPGCorelationTerm",vpgCorelationTerm_,FieldsList);   
+    checkInsert("tkeBudget_VPGCorelationTerm",vpgCorelationTerm_,FieldsList);  
+    checkInsert("tkeBudget_viscousDissipationTerm",visDissipationTerm_,FieldsList); 
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
