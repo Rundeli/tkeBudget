@@ -61,8 +61,8 @@ Usage
 
         convectionTerm                              on;
         productionTerm                              on;
-        turbulenceDiffusionTerm                     on;
-        viscousDiffusionTerm                        on;
+        turbulenceTransportTerm                     on;
+        viscousTransportTerm                        on;
         velocity-pressureGradient-CorelationTerm    on;
         viscousDissipation                          on;
     }
