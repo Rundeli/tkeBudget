@@ -135,11 +135,11 @@ protected:
         //- Calculate the tkeBuget production term
         Switch productionTerm_;
 
-        //- Calculate the tkeBuget turbulence diffusion term
-        Switch turDiffusionTerm_;
+        //- Calculate the tkeBuget turbulence transport term
+        Switch turTransportTerm_;
 
-        //- Calculate the tkeBuget viscousity diffusion term
-        Switch visDiffusionTerm_;
+        //- Calculate the tkeBuget viscousity transport term
+        Switch visTransportTerm_;
 
         //- Calculate the tkeBuget velocity-pressure_gradient correlation term
         Switch vpgCorelationTerm_;
@@ -210,7 +210,7 @@ protected:
         void calConvectionTerm
         (
             const volVectorField& UMean,
-            const volVectorField& gradUPrime2Mean
+            const volScalarField& k
         );
 
         //- Calculate the tkeBuget ProductionTerm Fields
@@ -220,15 +220,15 @@ protected:
             const volTensorField& gradUMean
         );
 
-        //- Calculate the tkeBuget TurbulenceDiffusionTerm Fields
-        void calTurbulenceDiffusionTerm
+        //- Calculate the tkeBuget TurbulenceTransportTerm Fields
+        void calTurbulenceTransportTerm
         (
-            const volSymmTensorField& UPrime2Mean,
+            const volScalarField& k,
             const volVectorField& UPrime
         );
 
-        //- Calculate the tkeBuget ViscousDiffusionTerm Fields
-        void calViscousDiffusionTerm
+        //- Calculate the tkeBuget ViscousTransportTerm Fields
+        void calViscousTransportTerm
         (
             const volSymmTensorField& Sij,
             const volVectorField& UPrime,
