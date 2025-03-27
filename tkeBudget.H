@@ -50,13 +50,75 @@ Usage
     \verbatim
     libs("libtkeBudget.so");
 
+    fieldAverage1
+    {
+        type fieldAverage;
+        libs (fieldFunctionObjects);
+        writeControl    writeTime;
+        timeStart       0;
+        timeEnd         15;
+
+        fields
+        (
+            "U"
+            {
+                mean on;
+                prime2Mean on;
+                base time;
+            }
+
+            "p"
+            {
+                mean on;
+                prime2Mean off;
+                base time;
+            }
+        );
+    }
+
+    tkeBudgetPrecursor
+    {
+        type tkeBudgetPrecursor;
+        libs (tkeBudget);
+
+        writeControl    writeTime;
+        timeStart       0;
+        timeEnd         15;
+    }
+
+    fieldAverage2
+    {
+        type fieldAverage;
+        libs (fieldFunctionObjects)
+        writeControl    writeTime;
+        timeStart       0;
+        timeEnd         15;
+
+        fields
+        (
+            "tkeBudget_tkeBudget_UPCTermPrecursor"
+            {
+                mean on;
+                prime2Mean off;
+                base time;
+            }
+
+            "tkeBudget_TurTransTermPrecursor"
+            {
+                mean on;
+                prime2Mean off;
+                base time;
+            }
+        );
+    }
+
     tkeBudget
     {
         type tkeBudget;
         libs (tkeBudget);
-        writeInterval   1;
-        timeStart       1;
-        timeEnd         1;
+        writeControl    writeTime;
+        timeStart       0;
+        timeEnd         15;
         rho             1000;
 
         convectionTerm                              on;
@@ -64,7 +126,7 @@ Usage
         turbulenceTransportTerm                     on;
         viscousTransportTerm                        on;
         velocity-pressureGradient-CorelationTerm    on;
-        viscousDissipation                          on;
+        viscousDissipationTerm                      on;
     }
     \endverbatim
 
@@ -162,42 +224,6 @@ protected:
         //- Name of mean pressure field
         word pMeanName_;
 
-        /*
-        //- Velocity field
-        const volVectorField U_;
-
-        //- Mean velocity field
-        const volVectorField UMean_;
-
-        //- Prime2Mean velocity field
-        const volSymmTensorField UPrime2Mean_;
-
-        //- Kinematic viscosity field
-        const volScalarField nu_;
-
-        //- Pressure field
-        const volScalarField p_;
-
-        //- Mean pressure field
-        const volScalarField pMean_;
-        */
-
-/*
-        //- Temporary field for conventionTerm field
-        tmp<volScalarField> convectionTermField_;
-
-        //- Temporary field for productionTerm field
-        tmp<volScalarField> productionTermField_;
-
-        //- Temporary field for turbulenceDiffusionTerm field
-        tmp<volScalarField> turbulenceDiffusionTermField_;
-
-        //- Temporary field for viscousityDiffusionTerm field
-        tmp<volScalarField> viscousDiffusionTermField_;
-
-        //- Temporary field for velocity-pressure_gradient correlation term field
-        tmp<volScalarField> vpgCorelationTermField_;
-*/
         //- Fields name-switch mapping
         HashTable<bool> FieldsList;
 
@@ -223,8 +249,7 @@ protected:
         //- Calculate the tkeBuget TurbulenceTransportTerm Fields
         void calTurbulenceTransportTerm
         (
-            const volScalarField& k,
-            const volVectorField& UPrime
+            const volVectorField& turTransPrecursorMean
         );
 
         //- Calculate the tkeBuget ViscousTransportTerm Fields
@@ -238,9 +263,7 @@ protected:
         //- Calculate the tkeBuget Velocity-PressureGradient CorelationTerm Fields
         void calVPGCorelationTerm
         (
-            const volVectorField& UPrime,
-            const volScalarField& p,
-            const volScalarField& pMean
+            const volVectorField& vpgPrecursorMean
         );
 
         //- Calculate the tkeBuget ViscousDissipationTerm Fields

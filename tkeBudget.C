@@ -27,6 +27,9 @@ void Foam::functionObjects::tkeBudget::calculateTKEBudget()
     volScalarField p_ = obr().lookupObject<volScalarField>(pName_);
     volScalarField pMean_ = obr().lookupObject<volScalarField>(pMeanName_);
 
+    volVectorField vpgPrecursorMean_ = obr().lookupObject<volVectorField>("tkeBudget_UPCTermPrecursor");
+    volVectorField turTransPrecursorMean_ = obr().lookupObject<volVectorField>("tkeBudget_TurTransTermPrecursor");
+
     const incompressible::turbulenceModel& turModel_ = lookupObject<incompressible::turbulenceModel>(turbulenceModel::propertiesName);
     volScalarField nu_ = turModel_.nu();
 
@@ -43,9 +46,9 @@ void Foam::functionObjects::tkeBudget::calculateTKEBudget()
 
     calConvectionTerm(UMean_,k_);
     calProductionTerm(UPrime2Mean_,gradUMean_);
-    calTurbulenceTransportTerm(k_,UPrime);
+    calTurbulenceTransportTerm(turTransPrecursorMean_);
     calViscousTransportTerm(Sij,UPrime,nu_);
-    calVPGCorelationTerm(UPrime,p_,pMean_);
+    calVPGCorelationTerm(vpgPrecursorMean_);
     calViscousDissipationTerm(Sij,nu_);
 }
 
@@ -150,15 +153,14 @@ void Foam::functionObjects::tkeBudget::calProductionTerm
 
 void Foam::functionObjects::tkeBudget::calTurbulenceTransportTerm
 (
-    const volScalarField& k,
-    const volVectorField& UPrime
+    const volVectorField& turTransPrecursorMean
 )
 {
     if(turTransportTerm_)
     {
         Info<< "Calculating TKE turbulence transport term" << endl;
-        volVectorField q2UPrime = k * UPrime;
-        volScalarField divq2UPM = fvc::div(q2UPrime);
+
+        volScalarField divq2UPM = fvc::div(turTransPrecursorMean);
 
         tmp<volScalarField> tdfPtr_
         (
@@ -167,8 +169,8 @@ void Foam::functionObjects::tkeBudget::calTurbulenceTransportTerm
                 IOobject
                 (
                     "turbulenceTransportTerm",
-                    UPrime.mesh().time().timeName(),
-                    UPrime.mesh()
+                    turTransPrecursorMean.mesh().time().timeName(),
+                    turTransPrecursorMean.mesh()
                 ),
                 divq2UPM
             )
@@ -209,8 +211,8 @@ void Foam::functionObjects::tkeBudget::calViscousTransportTerm
     if(visTransportTerm_)
     {
         Info<< "Calculating TKE viscous transport term" << endl;
-        volTensorField gradUP = fvc::grad(UPrime);
-        volScalarField SgradUP = Sij && gradUP;
+        volVectorField SUP = Sij & UPrime;
+        volScalarField divSUP = fvc::div(SUP);
         tmp<volScalarField> vdfPtr_
         (
             new volScalarField
@@ -221,7 +223,7 @@ void Foam::functionObjects::tkeBudget::calViscousTransportTerm
                     UPrime.mesh().time().timeName(),
                     UPrime.mesh()
                 ),
-                2.0*nu*SgradUP
+                2.0*nu*divSUP
             )
         );
 
@@ -252,18 +254,14 @@ void Foam::functionObjects::tkeBudget::calViscousTransportTerm
 
 void Foam::functionObjects::tkeBudget::calVPGCorelationTerm
 (
-    const volVectorField& UPrime,
-    const volScalarField& p,
-    const volScalarField& pMean
+    const volVectorField& vpgPrecursorMean
 )
 {
     if(vpgCorelationTerm_)
     {
         Info<< "Calculating TKE velocity-pressureGradient-Corelation term" << endl;
-        volScalarField pPrime = p - pMean;
-    
-        volVectorField upPrime = pPrime * UPrime;
-        volScalarField divupPrime = fvc::div(upPrime);
+       
+        volScalarField divupPrime = fvc::div(vpgPrecursorMean);
     
         tmp<volScalarField> vpgPtr_
         (
@@ -272,8 +270,8 @@ void Foam::functionObjects::tkeBudget::calVPGCorelationTerm
                 IOobject
                 (
                     "VPGCorelationTerm",
-                    UPrime.mesh().time().timeName(),
-                    UPrime.mesh()
+                    vpgPrecursorMean.mesh().time().timeName(),
+                    vpgPrecursorMean.mesh()
                 ),
                 -(1.0/rho_)* divupPrime
             )

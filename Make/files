@@ -1,3 +1,4 @@
 tkeBudget.C
+tkeBudgetPrecursor.C
 
 LIB = $(FOAM_USER_LIBBIN)/libtkeBudget
